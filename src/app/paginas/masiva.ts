@@ -6,7 +6,7 @@ import { AgenteService } from '../core/agente.service';
 import { ApiService } from '../core/api.service';
 import { archivoABase64, base64ABlob, descargarBlob, esPdf, mensajeError, tamanoLegible } from '../core/archivos';
 import { EstadoService } from '../core/estado.service';
-import { Certificado, FirmarCarpetaResultado, FirmarResultado, OpcionesFirma } from '../core/modelos';
+import { Certificado, DocumentoSubido, FirmarCarpetaResultado, FirmarResultado, OpcionesFirma } from '../core/modelos';
 
 interface Elemento {
   archivo: File;
@@ -205,20 +205,20 @@ export class MasivaPagina {
 
     for (const e of pendientes) {
       this.actualizar(e, { estado: 'firmando', error: undefined });
-      let idDocumento: number | null = null;
+      let registro: DocumentoSubido | null = null;
       try {
-        if (loteId) idDocumento = await this.api.subirDocumento(e.archivo, loteId).then((d) => d.id, () => null);
+        if (loteId) registro = await this.api.subirDocumento(e.archivo, loteId).catch(() => null);
         const r = await this.agente.firmar(cert.thumbprint, await archivoABase64(e.archivo), e.archivo.name, op);
-        if (idDocumento) {
+        if (registro) {
           await this.api
-            .registrarFirma(idDocumento, base64ABlob(r.pdfBase64), r, op.motivo, op.ubicacion, this.estado.infoAgente()?.equipo)
+            .registrarFirma(registro, base64ABlob(r.pdfBase64), r, op.motivo, op.ubicacion, this.estado.infoAgente()?.equipo)
             .catch(() => undefined);
         }
         this.actualizar(e, { estado: 'firmado', resultado: r });
       } catch (err) {
         const mensaje = mensajeError(err);
         this.actualizar(e, { estado: 'error', error: mensaje });
-        if (idDocumento) this.api.registrarError(idDocumento, mensaje).catch(() => undefined);
+        if (registro) this.api.registrarError(registro, mensaje).catch(() => undefined);
         // Si se canceló el PIN o se desconectó el token, no tiene sentido seguir.
         if (/clave privada|PIN|cancel/i.test(mensaje)) {
           this.error.set('Proceso detenido: ' + mensaje);

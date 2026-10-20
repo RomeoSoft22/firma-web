@@ -58,7 +58,7 @@ export class EstadoService {
 
   async cargarCatalogos(): Promise<void> {
     try {
-      const [parametros, motivos] = await Promise.all([this.api.parametros(), this.api.motivos(true)]);
+      const [parametros, motivos] = await Promise.all([this.api.parametros(), this.api.motivos()]);
       this.parametros.set({ ...PARAMETROS_DEFECTO, ...parametros });
       if (motivos.length) this.motivos.set(motivos);
       this.cacheImagenes.clear();

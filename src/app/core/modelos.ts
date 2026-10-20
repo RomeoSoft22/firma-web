@@ -141,6 +141,11 @@ export interface Documento {
   created_at: string;
 }
 
+/** Documento recién registrado: incluye el token de un solo uso para adjuntar el firmado. */
+export interface DocumentoSubido extends Documento {
+  token_carga: string;
+}
+
 export interface Lote {
   id: number;
   nombre: string;

@@ -11,10 +11,16 @@
       @for (item of menu; track item.ruta) {
         <a [routerLink]="item.ruta" routerLinkActive="activo">
           <span class="icono">{{ item.icono }}</span>{{ item.texto }}
+          @if (item.protegida && !acceso.autenticado()) {
+            <span class="candado-menu" title="Requiere clave de administración">🔒</span>
+          }
         </a>
       }
     </nav>
     <div class="conexiones">
+      @if (acceso.autenticado()) {
+        <button type="button" class="cerrar-sesion" (click)="cerrarSesion()">Cerrar sesión de administración</button>
+      }
       <div class="conexion" [class.ok]="estado.agenteOk()" [class.mal]="estado.agenteOk() === false">
         <span class="punto"></span> Agente local
       </div>

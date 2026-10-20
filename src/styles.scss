@@ -248,6 +248,18 @@ input.en-linea { border-color: transparent; background: transparent; &:hover, &:
   img { max-height: 48px; max-width: 140px; border: 1px solid var(--borde); border-radius: 4px; background: #fff; padding: 2px; }
 }
 .imagen-motivo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; img { max-height: 36px; max-width: 110px; border: 1px solid var(--borde); border-radius: 4px; background: #fff; } }
+.ayuda-agente {
+  ol { margin: 8px 0; padding-left: 20px; display: grid; gap: 4px; }
+  a { color: inherit; font-weight: 600; }
+}
+.acceso {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  form { width: 100%; max-width: 380px; display: grid; gap: 12px; text-align: left; }
+  h1 { font-size: 20px; }
+  .candado { font-size: 32px; }
+}
 .firma-verificada { border: 1px solid var(--borde); border-radius: var(--radio); padding: 14px; margin-top: 12px; }
 .firma-cabecera { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .estado-lista { padding-left: 18px; color: var(--suave); }

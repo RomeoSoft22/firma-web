@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, timeout } from 'rxjs';
 import { ConfigService } from './config.service';
-import { Documento, Estadisticas, FirmarResultado, Lote, Motivo, Paginado, Parametros } from './modelos';
+import { Documento, DocumentoSubido, Estadisticas, FirmarResultado, Lote, Motivo, Paginado, Parametros } from './modelos';
 
 /** Cliente de la API Laravel: historial, lotes, motivos y parámetros. Nunca recibe claves privadas. */
 @Injectable({ providedIn: 'root' })
@@ -34,14 +34,22 @@ export class ApiService {
     return firstValueFrom(this.http.get<Estadisticas>(this.url('documentos/estadisticas')));
   }
 
-  subirDocumento(archivo: File, loteId?: number): Promise<Documento> {
+  /** Registra el original; devuelve el token de carga necesario para adjuntar el firmado o el error. */
+  subirDocumento(archivo: File, loteId?: number): Promise<DocumentoSubido> {
     const datos = new FormData();
     datos.append('archivo', archivo, archivo.name);
     if (loteId) datos.append('lote_id', String(loteId));
-    return firstValueFrom(this.http.post<Documento>(this.url('documentos'), datos));
+    return firstValueFrom(this.http.post<DocumentoSubido>(this.url('documentos'), datos));
   }
 
-  registrarFirma(id: number, pdf: Blob, r: FirmarResultado, motivo: string, ubicacion: string, equipo?: string): Promise<Documento> {
+  registrarFirma(
+    doc: DocumentoSubido,
+    pdf: Blob,
+    r: FirmarResultado,
+    motivo: string,
+    ubicacion: string,
+    equipo?: string,
+  ): Promise<Documento> {
     const datos = new FormData();
     datos.append('archivo', pdf, r.nombreArchivo);
     datos.append('firmante', r.firmante);
@@ -53,11 +61,19 @@ export class ApiService {
     datos.append('sello_tiempo', r.selloTiempo ? '1' : '0');
     datos.append('fecha_firma', r.fechaFirma);
     if (equipo) datos.append('equipo', equipo);
-    return firstValueFrom(this.http.post<Documento>(this.url(`documentos/${id}/firmado`), datos));
+    return firstValueFrom(
+      this.http.post<Documento>(this.url(`documentos/${doc.id}/firmado`), datos, {
+        headers: { 'X-Token-Carga': doc.token_carga },
+      }),
+    );
   }
 
-  registrarError(id: number, mensaje: string): Promise<Documento> {
-    return firstValueFrom(this.http.post<Documento>(this.url(`documentos/${id}/error`), { mensaje }));
+  registrarError(doc: DocumentoSubido, mensaje: string): Promise<Documento> {
+    return firstValueFrom(
+      this.http.post<Documento>(this.url(`documentos/${doc.id}/error`), { mensaje }, {
+        headers: { 'X-Token-Carga': doc.token_carga },
+      }),
+    );
   }
 
   buscarPorHash(hash: string): Promise<Documento> {
@@ -68,8 +84,9 @@ export class ApiService {
     return firstValueFrom(this.http.delete(this.url(`documentos/${id}`)));
   }
 
-  urlDescarga(id: number, tipo: 'original' | 'firmado'): string {
-    return this.url(`documentos/${id}/descargar/${tipo}`);
+  /** Descarga protegida: se pide con la sesión de administración (no puede ser un enlace directo). */
+  descargar(id: number, tipo: 'original' | 'firmado'): Promise<Blob> {
+    return firstValueFrom(this.http.get(this.url(`documentos/${id}/descargar/${tipo}`), { responseType: 'blob' }));
   }
 
   // ---- Lotes ----
@@ -80,8 +97,14 @@ export class ApiService {
 
   // ---- Motivos ----
 
-  motivos(soloActivos = false): Promise<Motivo[]> {
-    return firstValueFrom(this.http.get<Motivo[]>(this.url('motivos'), { params: soloActivos ? { activos: 1 } : {} }));
+  /** Motivos activos (público): los que se ofrecen al firmar. */
+  motivos(): Promise<Motivo[]> {
+    return firstValueFrom(this.http.get<Motivo[]>(this.url('motivos')));
+  }
+
+  /** Todos los motivos, activos e inactivos (Configuración; requiere sesión de administración). */
+  motivosTodos(): Promise<Motivo[]> {
+    return firstValueFrom(this.http.get<Motivo[]>(this.url('motivos/todos')));
   }
 
   guardarMotivo(m: Partial<Motivo>): Promise<Motivo> {

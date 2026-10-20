@@ -23,12 +23,27 @@ import { environment } from '../../environments/environment';
       </div>
 
       @if (!estado.agenteOk()) {
-        <div class="alerta alerta-error">
-          El Agente de Firma no responde. Inícielo en esta PC (ícono en la bandeja del sistema) y conecte su token o DNIe.
-          <br />
-          ¿Primera vez en esta PC?
-          <a [href]="descargaAgente" download>Descargue e instale el Agente de Firma</a>
-          y vuelva a pulsar «Actualizar». Si el navegador pregunta si el sitio puede acceder a la red local, permítalo.
+        <div class="alerta alerta-error ayuda-agente">
+          <strong>No se pudo conectar con el Agente de Firma de esta PC.</strong>
+          <ol>
+            <li>
+              ¿Primera vez en esta PC?
+              <a [href]="descargaAgente" download>Descargue e instale el Agente de Firma</a>.
+            </li>
+            <li>
+              Si ya está instalado, ábralo desde el menú Inicio (<em>Reiniciar Agente de Firma</em>) y compruebe el ícono
+              «FD» en la bandeja del sistema.
+            </li>
+            <li>
+              Si el navegador preguntó si este sitio puede <em>acceder a la red local / dispositivos locales</em>, elija
+              <strong>Permitir</strong> (candado de la barra de direcciones → Configuración del sitio).
+            </li>
+            <li>
+              Desactive el <strong>bloqueador de anuncios o escudos</strong> del navegador para este sitio: algunos bloquean
+              la conexión con el agente (127.0.0.1).
+            </li>
+          </ol>
+          Luego pulse «Actualizar».
         </div>
       } @else if (error()) {
         <div class="alerta alerta-error">{{ error() }}</div>

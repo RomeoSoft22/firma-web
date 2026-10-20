@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
-import { mensajeError } from '../core/archivos';
+import { descargarBlob, mensajeError } from '../core/archivos';
 import { EstadoService } from '../core/estado.service';
 import { Documento, Estadisticas, Paginado } from '../core/modelos';
 
@@ -66,9 +66,9 @@ import { Documento, Estadisticas, Paginado } from '../core/modelos';
                   [title]="d.mensaje_error ?? ''">{{ d.estado }}</span>
               </td>
               <td class="acciones-fila">
-                <a class="btn btn-enlace" [href]="api.urlDescarga(d.id, 'original')">Original</a>
+                <button class="btn btn-enlace" (click)="descargar(d, 'original')">Original</button>
                 @if (d.estado === 'firmado') {
-                  <a class="btn btn-enlace" [href]="api.urlDescarga(d.id, 'firmado')">Firmado</a>
+                  <button class="btn btn-enlace" (click)="descargar(d, 'firmado')">Firmado</button>
                 }
                 <button class="btn btn-enlace peligro" (click)="eliminar(d)">Eliminar</button>
               </td>
@@ -114,6 +114,16 @@ export class HistorialPagina implements OnInit {
       ]);
       this.pagina.set(pagina);
       this.stats.set(stats);
+    } catch (e) {
+      this.error.set(mensajeError(e));
+    }
+  }
+
+  /** Las descargas requieren la sesión de administración, por eso no son enlaces directos. */
+  async descargar(d: Documento, tipo: 'original' | 'firmado'): Promise<void> {
+    try {
+      const pdf = await this.api.descargar(d.id, tipo);
+      descargarBlob(pdf, (tipo === 'firmado' ? d.nombre_firmado : d.nombre_original) ?? `documento-${d.id}.pdf`);
     } catch (e) {
       this.error.set(mensajeError(e));
     }

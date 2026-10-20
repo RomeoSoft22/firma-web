@@ -232,7 +232,7 @@ export class ConfiguracionPagina implements OnInit {
   private async cargarMotivos(): Promise<void> {
     if (!this.estado.apiOk()) return;
     try {
-      this.motivos.set(await this.api.motivos());
+      this.motivos.set(await this.api.motivosTodos());
     } catch (e) {
       this.avisar(mensajeError(e), true);
     }

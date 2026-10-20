@@ -61,6 +61,21 @@ nav {
   .icono { width: 18px; text-align: center; }
 }
 
+.candado-menu { margin-left: auto; font-size: 12px; opacity: 0.75; }
+
+.cerrar-sesion {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #c5cfdc;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  &:hover { background: rgba(255, 255, 255, 0.06); }
+}
+
 .conexiones {
   margin-top: auto;
   display: grid;

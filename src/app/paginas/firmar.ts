@@ -8,7 +8,7 @@ import { AgenteService } from '../core/agente.service';
 import { ApiService } from '../core/api.service';
 import { archivoABase64, base64ABlob, descargarBlob, esPdf, mensajeError, tamanoLegible } from '../core/archivos';
 import { EstadoService } from '../core/estado.service';
-import { Certificado, FirmarResultado, OpcionesFirma, VerificacionResultado } from '../core/modelos';
+import { Certificado, DocumentoSubido, FirmarResultado, OpcionesFirma, VerificacionResultado } from '../core/modelos';
 
 @Component({
   selector: 'app-firmar',
@@ -168,15 +168,16 @@ export class FirmarPagina {
     this.firmando.set(true);
     this.error.set(null);
     this.registrado.set(null);
-    let idDocumento: number | null = null;
+    let registro: DocumentoSubido | null = null;
 
     try {
       // Lugar, TSA e imagen del sello se toman de la configuración y del motivo elegido.
       const op = await this.estado.opcionesParaFirmar(this.opciones());
 
       // 1. Registrar el original en la API (opcional: si no está disponible se firma igual).
+      //    La API devuelve un token de carga de un solo uso para adjuntar luego el firmado.
       if (this.estado.apiOk()) {
-        idDocumento = await this.api.subirDocumento(archivo).then((d) => d.id, () => null);
+        registro = await this.api.subirDocumento(archivo).catch(() => null);
       }
 
       // 2. Firmar en el agente local (aquí Windows pide el PIN del token si corresponde).
@@ -184,10 +185,11 @@ export class FirmarPagina {
       const pdfFirmado = base64ABlob(r.pdfBase64);
 
       // 3. Guardar la versión firmada en el historial.
-      if (idDocumento) {
+      if (registro) {
+        const doc = registro;
         await this.api
-          .registrarFirma(idDocumento, pdfFirmado, r, op.motivo, op.ubicacion, this.estado.infoAgente()?.equipo)
-          .then(() => this.registrado.set(idDocumento), () => this.registrado.set(null));
+          .registrarFirma(doc, pdfFirmado, r, op.motivo, op.ubicacion, this.estado.infoAgente()?.equipo)
+          .then(() => this.registrado.set(doc.id), () => this.registrado.set(null));
       }
 
       // 4. Mostrar el documento firmado en la página donde quedó la firma.
@@ -199,7 +201,7 @@ export class FirmarPagina {
     } catch (e) {
       const mensaje = mensajeError(e);
       this.error.set(mensaje);
-      if (idDocumento) this.api.registrarError(idDocumento, mensaje).catch(() => undefined);
+      if (registro) this.api.registrarError(registro, mensaje).catch(() => undefined);
     } finally {
       this.firmando.set(false);
     }
