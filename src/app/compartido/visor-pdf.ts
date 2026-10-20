@@ -139,6 +139,8 @@ export class VisorPdf implements OnDestroy {
         data: new Uint8Array(await archivo.arrayBuffer()),
         // Fuentes estándar (Helvetica, etc.) para dibujar fielmente el texto de los sellos de firma.
         standardFontDataUrl: '/pdfjs/standard_fonts/',
+        // Compatible con la Content-Security-Policy del sitio (sin eval / new Function).
+        isEvalSupported: false,
       }).promise;
       this.total.set(this.doc.numPages);
       await this.irA(1, true);

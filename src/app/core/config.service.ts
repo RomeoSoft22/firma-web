@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 const CLAVE = 'firma-digital.config';
 
@@ -8,8 +9,8 @@ interface ConfigLocal {
 }
 
 const DEFECTO: ConfigLocal = {
-  agenteUrl: 'http://127.0.0.1:9876',
-  apiUrl: 'http://127.0.0.1:8000/api',
+  agenteUrl: environment.agenteUrl,
+  apiUrl: environment.apiUrl,
 };
 
 /** Direcciones del agente local y de la API, guardadas en el navegador de cada usuario. */

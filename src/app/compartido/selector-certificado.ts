@@ -5,6 +5,7 @@ import { AgenteService } from '../core/agente.service';
 import { mensajeError } from '../core/archivos';
 import { EstadoService } from '../core/estado.service';
 import { Certificado } from '../core/modelos';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-selector-certificado',
@@ -23,7 +24,11 @@ import { Certificado } from '../core/modelos';
 
       @if (!estado.agenteOk()) {
         <div class="alerta alerta-error">
-          El Agente de Firma no responde. Inícielo en esta PC y conecte su token o DNIe.
+          El Agente de Firma no responde. Inícielo en esta PC (ícono en la bandeja del sistema) y conecte su token o DNIe.
+          <br />
+          ¿Primera vez en esta PC?
+          <a [href]="descargaAgente" download>Descargue e instale el Agente de Firma</a>
+          y vuelva a pulsar «Actualizar». Si el navegador pregunta si el sitio puede acceder a la red local, permítalo.
         </div>
       } @else if (error()) {
         <div class="alerta alerta-error">{{ error() }}</div>
@@ -73,6 +78,7 @@ import { Certificado } from '../core/modelos';
 export class SelectorCertificado implements OnInit {
   private readonly agente = inject(AgenteService);
   protected readonly estado = inject(EstadoService);
+  protected readonly descargaAgente = environment.descargaAgente;
 
   readonly seleccionado = model<Certificado | null>(null);
   protected readonly certificados = signal<Certificado[]>([]);
