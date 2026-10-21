@@ -63,6 +63,14 @@ nav {
 
 .candado-menu { margin-left: auto; font-size: 12px; opacity: 0.75; }
 
+.usuario-sesion {
+  color: #e6ecf3;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cerrar-sesion {
   background: none;
   border: 1px solid rgba(255, 255, 255, 0.2);

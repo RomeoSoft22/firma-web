@@ -1,59 +1,51 @@
-import { Component, inject, input, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { AccesoService } from '../core/acceso.service';
 import { mensajeError } from '../core/archivos';
 
+/**
+ * Historial y Configuración se abren con la cuenta de Juarez Campos (identidad.juarezcampos.net).
+ * Esta pantalla redirige sola al login de identidad; el botón queda por si la redirección falla.
+ */
 @Component({
   selector: 'app-acceso',
-  imports: [FormsModule],
   template: `
     <div class="acceso">
-      <form class="tarjeta" (ngSubmit)="entrar()">
+      <div class="tarjeta">
         <div class="candado">🔒</div>
         <h1>Acceso de administración</h1>
-        <p class="ayuda">Historial y Configuración requieren la clave de administración.</p>
-        <label class="campo">
-          <span>Clave</span>
-          <input type="password" name="clave" [(ngModel)]="clave" autocomplete="current-password"
-            [disabled]="enviando()" autofocus required />
-        </label>
+        <p class="ayuda">Historial y Configuración se abren con tu cuenta de Juarez Campos.</p>
         @if (error()) {
           <div class="alerta alerta-error">{{ error() }}</div>
         }
-        <button class="btn btn-primario btn-bloque" type="submit" [disabled]="enviando() || !clave">
-          {{ enviando() ? 'Verificando…' : 'Ingresar' }}
+        <button class="btn btn-primario btn-bloque" type="button" (click)="ingresar()" [disabled]="redirigiendo()">
+          {{ redirigiendo() ? 'Abriendo el inicio de sesión…' : 'Ingresar con mi cuenta' }}
         </button>
-        <p class="ayuda centro">Por seguridad, varios intentos fallidos bloquean el acceso temporalmente.</p>
-      </form>
+      </div>
     </div>
   `,
 })
-export class AccesoPagina {
+export class AccesoPagina implements OnInit {
   private readonly acceso = inject(AccesoService);
-  private readonly router = inject(Router);
 
   /** Ruta a la que volver tras ingresar (?volver=/historial). */
   readonly volver = input<string>('/historial');
 
-  protected clave = '';
-  protected readonly enviando = signal(false);
+  protected readonly redirigiendo = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  async entrar(): Promise<void> {
-    if (!this.clave) return;
-    this.enviando.set(true);
+  ngOnInit(): void {
+    this.ingresar();
+  }
+
+  async ingresar(): Promise<void> {
+    this.redirigiendo.set(true);
     this.error.set(null);
     try {
-      await this.acceso.entrar(this.clave);
-      this.clave = '';
       const destino = this.volver()?.startsWith('/') && !this.volver().startsWith('/acceso') ? this.volver() : '/historial';
-      await this.router.navigateByUrl(destino);
+      await this.acceso.iniciar(destino);
     } catch (e) {
       this.error.set(mensajeError(e));
-      this.clave = '';
-    } finally {
-      this.enviando.set(false);
+      this.redirigiendo.set(false);
     }
   }
 }

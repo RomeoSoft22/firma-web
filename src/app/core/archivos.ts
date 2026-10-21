@@ -59,7 +59,12 @@ export function tamanoLegible(bytes: number): string {
 export function mensajeError(e: unknown): string {
   if (e instanceof HttpErrorResponse) {
     if (e.status === 0) return 'No hay conexión con el servicio. Verifique que esté iniciado.';
-    if (e.status >= 500) return 'Ocurrió un error inesperado. Intente nuevamente o comuníquese con el administrador.';
+    if (e.status >= 500) {
+      // La API nunca envía detalles técnicos; solo una referencia para que el administrador ubique el error en su log.
+      const referencia = (e.error as { referencia?: string } | null)?.referencia;
+      return 'Ocurrió un error inesperado. Intente nuevamente o comuníquese con el administrador'
+        + (referencia ? ` (referencia ${referencia}).` : '.');
+    }
     const cuerpo = e.error as { mensaje?: string; message?: string; errors?: Record<string, string[]> } | null;
     if (cuerpo?.mensaje) return cuerpo.mensaje;
     if (cuerpo?.errors) return Object.values(cuerpo.errors).flat().join(' ');
