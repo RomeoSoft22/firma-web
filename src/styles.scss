@@ -1,26 +1,54 @@
+// Colores de juarezcampos.net: primario #037FFF, oscuro #090A0C, texto secundario #555A64; tipografía Poppins.
 :root {
-  --primario: #1f5fbf;
-  --primario-oscuro: #184c99;
-  --lateral: #14213d;
-  --fondo: #f3f5f9;
+  --primario: #037fff;
+  --primario-oscuro: #0266cc;
+  --primario-suave: #e8f3ff;
+  --lateral: #090a0c;
+  --fondo: #f4f6fa;
   --superficie: #ffffff;
-  --borde: #dde3ec;
-  --texto: #1d2633;
-  --suave: #5f6b7c;
+  --superficie-2: #f0f3f8;
+  --borde: #dde2ea;
+  --texto: #090a0c;
+  --suave: #555a64;
   --ok: #1e8e5a;
   --ok-fondo: #e3f5ec;
   --mal: #c0392b;
   --mal-fondo: #fdecea;
   --aviso: #9a6700;
   --aviso-fondo: #fff4d6;
+  --sombra: rgba(38, 59, 94, 0.1);
   --radio: 10px;
+  color-scheme: light;
 }
 
+// Tema oscuro automático (según Windows / el navegador).
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primario: #3396ff;
+    --primario-oscuro: #037fff;
+    --primario-suave: #10243d;
+    --lateral: #050608;
+    --fondo: #0f1114;
+    --superficie: #181b20;
+    --superficie-2: #20242b;
+    --borde: #2c313a;
+    --texto: #eceef2;
+    --suave: #a3a9b5;
+    --ok: #4cc38a;
+    --ok-fondo: #12301f;
+    --mal: #ff7b6b;
+    --mal-fondo: #3a1714;
+    --aviso: #f2c14e;
+    --aviso-fondo: #33290f;
+    --sombra: rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+}
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   background: var(--fondo);
   color: var(--texto);
   font-size: 14px;
@@ -83,7 +111,7 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; w
   &:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 .btn-primario { background: var(--primario); color: #fff; &:hover:not(:disabled) { background: var(--primario-oscuro); } }
-.btn-sec { background: #fff; border-color: var(--borde); color: var(--texto); &:hover:not(:disabled) { background: #f0f3f8; } }
+.btn-sec { background: var(--superficie); border-color: var(--borde); color: var(--texto); &:hover:not(:disabled) { background: var(--superficie-2); } }
 .btn-enlace { background: none; color: var(--primario); padding: 6px 8px; &.peligro { color: var(--mal); } }
 .btn-bloque { width: 100%; margin-top: 16px; padding: 12px; }
 
@@ -99,12 +127,13 @@ input:not([type='checkbox']):not([type='file']), select, textarea {
   padding: 8px 10px;
   border: 1px solid var(--borde);
   border-radius: 8px;
-  background: #fff;
+  background: var(--superficie);
+  color: var(--texto);
   width: 100%;
-  &:focus { outline: 2px solid rgba(31, 95, 191, 0.25); border-color: var(--primario); }
+  &:focus { outline: 2px solid rgba(3, 127, 255, 0.25); border-color: var(--primario); }
 }
 input.en-linea.numero { width: 84px; }
-input.en-linea { border-color: transparent; background: transparent; &:hover, &:focus { border-color: var(--borde); background: #fff; } }
+input.en-linea { border-color: transparent; background: transparent; &:hover, &:focus { border-color: var(--borde); background: var(--superficie); } }
 .check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .fila-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
 .fila-imagen { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -131,7 +160,7 @@ input.en-linea { border-color: transparent; background: transparent; &:hover, &:
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 12px;
-  background: #eef1f6;
+  background: var(--superficie-2);
   color: var(--suave);
   &.ok { background: var(--ok-fondo); color: var(--ok); }
   &.mal { background: var(--mal-fondo); color: var(--mal); }
@@ -146,7 +175,7 @@ input.en-linea { border-color: transparent; background: transparent; &:hover, &:
   text-align: left;
   font: inherit;
   color: inherit;
-  background: #fff;
+  background: var(--superficie);
   border: 2px solid var(--borde);
   border-radius: var(--radio);
   padding: 14px;
@@ -154,7 +183,7 @@ input.en-linea { border-color: transparent; background: transparent; &:hover, &:
   display: grid;
   gap: 4px;
   &:hover:not(:disabled) { border-color: #9db8e3; }
-  &.activo { border-color: var(--primario); background: #f2f7ff; }
+  &.activo { border-color: var(--primario); background: var(--primario-suave); }
   &.no-apto { opacity: 0.6; cursor: not-allowed; }
 }
 .cert-titular { font-weight: 700; }
@@ -172,7 +201,7 @@ input.en-linea { border-color: transparent; background: transparent; &:hover, &:
   cursor: pointer;
   color: var(--suave);
   strong { color: var(--texto); font-size: 15px; }
-  &:hover, &.encima { border-color: var(--primario); background: #f2f7ff; }
+  &:hover, &.encima { border-color: var(--primario); background: var(--primario-suave); }
 }
 .archivo-elegido { display: flex; gap: 12px; align-items: center; .nombre { font-weight: 600; } }
 .icono-pdf { background: #d93b30; color: #fff; font-size: 11px; font-weight: 700; padding: 8px 6px; border-radius: 4px; }
@@ -215,7 +244,7 @@ input.en-linea { border-color: transparent; background: transparent; &:hover, &:
   border: 1px solid var(--borde);
   border-radius: 8px;
   overflow: hidden;
-  button { font: inherit; border: 0; background: #fff; padding: 7px 14px; cursor: pointer; &.activa { background: var(--primario); color: #fff; } }
+  button { font: inherit; border: 0; background: var(--superficie); color: var(--texto); padding: 7px 14px; cursor: pointer; &.activa { background: var(--primario); color: #fff; } }
 }
 .progreso { height: 8px; background: #e8edf4; border-radius: 99px; overflow: hidden; margin-top: 14px; .barra { height: 100%; background: var(--ok); transition: width 0.3s; } }
 .filtros { display: flex; gap: 10px; flex-wrap: wrap; input { flex: 1; min-width: 200px; } select { width: auto; } }
@@ -284,4 +313,24 @@ input.en-linea { border-color: transparent; background: transparent; &:hover, &:
   border-radius: 8px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
   &.error { background: var(--mal); }
+}
+
+/* ---- Logo de la marca (Configuración) ---- */
+.marca-variantes { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.marca-variante {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  .acciones { margin-top: 0; }
+}
+.marca-muestra {
+  height: 110px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+  &.oscura { background: #090a0c; }
+  img { max-width: 100%; max-height: 90px; object-fit: contain; }
 }

@@ -1,7 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { AccesoService } from './core/acceso.service';
 import { EstadoService } from './core/estado.service';
+import { MarcaService } from './core/marca.service';
 
 @Component({
   selector: 'app-root',
@@ -13,7 +16,17 @@ export class App implements OnInit {
   protected readonly estado = inject(EstadoService);
 
   protected readonly acceso = inject(AccesoService);
+  protected readonly marca = inject(MarcaService);
   private readonly router = inject(Router);
+
+  /** La aplicación de escritorio (/escritorio) ocupa toda la ventana, sin el menú lateral de la web. */
+  protected readonly enEscritorio = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.router.url.startsWith('/escritorio')),
+    ),
+    { initialValue: location.pathname.startsWith('/escritorio') },
+  );
 
   protected readonly menu = [
     { ruta: '/firmar', texto: 'Firmar documento', icono: '✍', protegida: false },
@@ -30,5 +43,6 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     this.estado.iniciar();
+    this.marca.cargar();
   }
 }

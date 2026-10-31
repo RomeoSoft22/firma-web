@@ -1,10 +1,13 @@
+@if (enEscritorio()) {
+  <router-outlet />
+} @else {
 <div class="marco">
   <aside class="lateral">
     <div class="marca">
-      <span class="logo">FD</span>
+      <img class="logo" [src]="marca.url('simbolo-oscuro')" alt="" />
       <div>
         <strong>Firma Digital</strong>
-        <small>PAdES · Web local</small>
+        <small>Jean Piere Juarez Campos</small>
       </div>
     </div>
     <nav>
@@ -36,3 +39,4 @@
     <router-outlet />
   </main>
 </div>
+}

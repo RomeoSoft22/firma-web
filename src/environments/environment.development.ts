@@ -5,7 +5,9 @@
  */
 export const environment = {
   produccion: false,
+  escritorio: false,
   agenteUrl: 'http://127.0.0.1:9876',
   apiUrl: '/api',
   descargaAgente: '/descargas/AgenteFirmaSetup.exe',
+  sitioWeb: 'https://firma.juarezcampos.net',
 };

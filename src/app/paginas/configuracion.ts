@@ -5,6 +5,7 @@ import { ApiService } from '../core/api.service';
 import { mensajeError } from '../core/archivos';
 import { ConfigService } from '../core/config.service';
 import { EstadoService } from '../core/estado.service';
+import { MarcaService, VarianteMarca } from '../core/marca.service';
 import { EstadoAgente, Motivo, Parametros } from '../core/modelos';
 
 @Component({
@@ -73,6 +74,35 @@ import { EstadoAgente, Motivo, Parametros } from '../core/modelos';
         <label class="check"><input type="checkbox" [ngModel]="p['usar_sello_tiempo'] === '1'" (ngModelChange)="p['usar_sello_tiempo'] = $event ? '1' : '0'" /> Sello de tiempo por defecto</label>
         <label class="check"><input type="checkbox" [ngModel]="p['incluir_revocacion'] === '1'" (ngModelChange)="p['incluir_revocacion'] = $event ? '1' : '0'" /> Incluir OCSP/CRL por defecto</label>
         <button class="btn btn-primario" [disabled]="!estado.apiOk()" (click)="guardarParametros()">Guardar parámetros</button>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Logo de la marca</h2>
+      <p class="ayuda">
+        Se usa en la web y en la aplicación de escritorio Firma Digital. La versión para fondo claro (logo oscuro) se muestra
+        con el tema diurno y la versión para fondo oscuro (logo blanco) con el tema oscuro y en las barras oscuras.
+        PNG con fondo transparente, JPG o WEBP, hasta 2 MB.
+      </p>
+      <div class="marca-variantes">
+        @for (v of variantesMarca; track v.clave) {
+          <div class="marca-variante">
+            <div class="marca-muestra" [class.oscura]="v.fondoOscuro">
+              <img [src]="marca.url(v.clave)" [alt]="v.titulo" />
+            </div>
+            <strong>{{ v.titulo }}</strong>
+            <span class="ayuda">{{ marca.personalizado(v.clave) ? 'Personalizado' : 'Incluido por defecto' }}</span>
+            <div class="acciones">
+              <label class="btn btn-sec">
+                Cambiar
+                <input type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="subirMarca(v.clave, $event)" />
+              </label>
+              @if (marca.personalizado(v.clave)) {
+                <button type="button" class="btn btn-enlace" (click)="restaurarMarca(v.clave)">Restaurar</button>
+              }
+            </div>
+          </div>
+        }
       </div>
     </div>
 
@@ -162,10 +192,45 @@ export class ConfiguracionPagina implements OnInit {
   protected readonly mensaje = signal<string | null>(null);
   protected readonly mensajeError = signal(false);
 
+  protected readonly marca = inject(MarcaService);
+  protected readonly variantesMarca: { clave: VarianteMarca; titulo: string; fondoOscuro: boolean }[] = [
+    { clave: 'simbolo-claro', titulo: 'Símbolo · fondo claro', fondoOscuro: false },
+    { clave: 'simbolo-oscuro', titulo: 'Símbolo · fondo oscuro', fondoOscuro: true },
+    { clave: 'logo-claro', titulo: 'Logo con nombre · fondo claro', fondoOscuro: false },
+    { clave: 'logo-oscuro', titulo: 'Logo con nombre · fondo oscuro', fondoOscuro: true },
+  ];
+
   async ngOnInit(): Promise<void> {
     await this.estado.comprobar();
     this.p = { ...this.estado.parametros() };
     await this.cargarMotivos();
+    await this.marca.cargar();
+  }
+
+  async subirMarca(variante: VarianteMarca, evento: Event): Promise<void> {
+    const entrada = evento.target as HTMLInputElement;
+    const imagen = entrada.files?.[0];
+    entrada.value = '';
+    if (!imagen) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(imagen.type) || imagen.size > 2 * 1024 * 1024) {
+      this.avisar('El logo debe ser PNG, JPG o WEBP de hasta 2 MB.', true);
+      return;
+    }
+    try {
+      await this.marca.subir(variante, imagen);
+      this.avisar('Logo actualizado.');
+    } catch (e) {
+      this.avisar(mensajeError(e), true);
+    }
+  }
+
+  async restaurarMarca(variante: VarianteMarca): Promise<void> {
+    try {
+      await this.marca.restaurar(variante);
+      this.avisar('Se restauró el logo incluido.');
+    } catch (e) {
+      this.avisar(mensajeError(e), true);
+    }
   }
 
   private avisar(texto: string, error = false): void {

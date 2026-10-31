@@ -6,6 +6,12 @@ export const routes: Routes = [
   { path: 'firmar', title: 'Firmar documento', loadComponent: () => import('./paginas/firmar').then((m) => m.FirmarPagina) },
   { path: 'masiva', title: 'Firma masiva', loadComponent: () => import('./paginas/masiva').then((m) => m.MasivaPagina) },
   { path: 'verificar', title: 'Verificar firma', loadComponent: () => import('./paginas/verificar').then((m) => m.VerificarPagina) },
+  // Aplicación de escritorio Firma Digital (la sirve el agente local dentro de WebView2).
+  {
+    path: 'escritorio',
+    title: 'Firma Digital',
+    loadComponent: () => import('./paginas/escritorio/escritorio').then((m) => m.EscritorioPagina),
+  },
   { path: 'acceso', title: 'Acceso de administración', loadComponent: () => import('./paginas/acceso').then((m) => m.AccesoPagina) },
   { path: 'callback', title: 'Validando sesión', loadComponent: () => import('./paginas/callback').then((m) => m.CallbackPagina) },
   // Protegidas con la cuenta de identidad.juarezcampos.net (rol ADMIN en el sistema FIRMA).

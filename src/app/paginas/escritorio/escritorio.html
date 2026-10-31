@@ -1,0 +1,257 @@
+<div class="esc" [class.esc-oscuro]="marca.temaOscuro()">
+  <!-- ================================================================ Barra de título -->
+  <header class="esc-titulo">
+    <img class="esc-simbolo" [src]="marca.url('simbolo-oscuro')" alt="" />
+    <span class="esc-nombre">FIRMA DIGITAL</span>
+    @if (titulo()) {
+      <span class="esc-doc">— {{ titulo() }}</span>
+    }
+    <nav class="esc-acciones">
+      <button type="button" (click)="verEstado()" [title]="todoBien() ? 'Todo funciona correctamente' : 'Hay un problema de conexión'">
+        <app-icono nombre="estado" [class.esc-ok]="todoBien()" [class.esc-mal]="!todoBien()" /> Estado
+      </button>
+      <span class="esc-separador"></span>
+      <button type="button" (click)="configurar()"><app-icono nombre="configurar" /> Configurar</button>
+      <span class="esc-separador"></span>
+      <button type="button" (click)="acercaDe()"><app-icono nombre="acerca" /> Acerca de</button>
+    </nav>
+  </header>
+
+  <!-- ================================================================ Barra de herramientas -->
+  <div class="esc-herramientas" (click)="$event.stopPropagation()">
+    <div class="esc-grupo">
+      <div class="esc-desplegable">
+        <button type="button" class="esc-boton" [class.activo]="menu() === 'archivo'" (click)="alternar('archivo', $event)">
+          <span class="esc-circulo"><app-icono nombre="archivo" /></span><span>Archivo</span>
+        </button>
+        @if (menu() === 'archivo') {
+          <div class="esc-menu">
+            <button type="button" (click)="abrir()">Abrir PDF <kbd>Ctrl+O</kbd></button>
+            <button type="button" (click)="guardarComo()" [disabled]="!documento()">Guardar como… <kbd>Ctrl+S</kbd></button>
+            <button type="button" (click)="cerrar()" [disabled]="!documento()">Cerrar PDF</button>
+            <button type="button" (click)="imprimir()" [disabled]="!documento()">Imprimir <kbd>Ctrl+P</kbd></button>
+            @if (puente.disponible && documento()?.ruta) {
+              <button type="button" (click)="mostrarEnCarpeta(); menu.set(null)">Mostrar en la carpeta</button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="esc-desplegable">
+        <button type="button" class="esc-boton" [class.activo]="menu() === 'firmar'" (click)="alternar('firmar', $event)">
+          <span class="esc-circulo"><app-icono nombre="firmar" /></span><span>Firmar</span>
+        </button>
+        @if (menu() === 'firmar') {
+          <div class="esc-menu">
+            <button type="button" (click)="firmar('titular')">Firma titular</button>
+            <button type="button" (click)="firmarAvanzada('titular')">Firma avanzada</button>
+          </div>
+        }
+      </div>
+
+      <div class="esc-desplegable">
+        <button type="button" class="esc-boton" [class.activo]="menu() === 'vb'" (click)="alternar('vb', $event)">
+          <span class="esc-circulo"><app-icono nombre="vb" /></span><span>V° B°</span>
+        </button>
+        @if (menu() === 'vb') {
+          <div class="esc-menu">
+            <button type="button" (click)="firmar('vb')">V° B° firma</button>
+            <button type="button" (click)="firmarAvanzada('vb')">V° B° avanzada</button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="esc-grupo">
+      <button type="button" class="esc-boton" (click)="imprimir()" [disabled]="!documento()">
+        <span class="esc-circulo"><app-icono nombre="imprimir" /></span><span>Imprimir</span>
+      </button>
+      <button type="button" class="esc-boton" (click)="verificar()" [disabled]="!documento()">
+        <span class="esc-circulo"><app-icono nombre="verificar" /></span><span>Verificar</span>
+      </button>
+      @if (documento()) {
+        <button type="button" class="esc-boton" (click)="acercar()">
+          <span class="esc-circulo"><app-icono nombre="acercar" /></span><span>Acercar</span>
+        </button>
+        <button type="button" class="esc-boton" (click)="alejar()">
+          <span class="esc-circulo"><app-icono nombre="alejar" /></span><span>Alejar</span>
+        </button>
+        <button type="button" class="esc-boton" (click)="ajustar()">
+          <span class="esc-circulo"><app-icono nombre="ajustar" /></span><span>Ajustar</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ================================================================ Área de trabajo -->
+  <main class="esc-trabajo">
+    @if (documento(); as doc) {
+      <app-visor-documento [pdf]="doc.bytes" [colocacion]="colocacion()" (colocado)="alColocar($event)" />
+    } @else {
+      <div class="esc-vacio">
+        <button type="button" class="esc-abrir" (click)="abrir()">
+          <app-icono nombre="carpeta" />
+          <strong>Abrir un PDF para firmar</strong>
+          <span>o use Archivo → Abrir PDF (Ctrl+O)</span>
+        </button>
+        <div class="esc-marca-agua">
+          <img [src]="marca.url('logo-oscuro')" alt="Jean Piere Juarez Campos" />
+          <div class="esc-hora">{{ ahora() | date: 'HH:mm' }}</div>
+          <div class="esc-fecha">{{ ahora() | date: 'd MMM, y' }}</div>
+        </div>
+      </div>
+    }
+
+    @if (enColocacion()) {
+      <div class="esc-banda">
+        Mueva el rectángulo rojo hasta donde quiere el sello y haga clic. <button type="button" (click)="cancelarColocacion()">Cancelar (Esc)</button>
+      </div>
+    }
+    @if (ocupado(); as texto) {
+      <div class="esc-ocupado"><span class="esc-giro"></span>{{ texto }}</div>
+    }
+    @if (aviso(); as a) {
+      <div class="esc-aviso" [class.error]="a.error" (click)="aviso.set(null)">
+        <app-icono [nombre]="a.error ? 'alerta' : 'estado'" /> {{ a.texto }}
+      </div>
+    }
+  </main>
+
+  <!-- ================================================================ Barra de estado -->
+  <footer class="esc-estado">
+    <span class="esc-ruta" [title]="documento()?.ruta ?? ''">{{ documento()?.ruta ?? documento()?.nombre ?? 'Sin documento' }}</span>
+    <span class="esc-conexion" [class.ok]="estado.agenteOk()" [class.mal]="estado.agenteOk() === false">● Agente</span>
+    <span class="esc-conexion" [class.ok]="estado.apiOk()" [class.mal]="estado.apiOk() === false">● Servicio</span>
+  </footer>
+
+  <!-- ================================================================ Diálogos -->
+  @if (dialogo(); as d) {
+    <div class="esc-fondo" (click)="cerrarDialogo()">
+      <section class="esc-dialogo" [class.ancho]="d === 'verificar'" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        @switch (d) {
+          <!-- ---------------------------------------------- Certificado -->
+          @case ('certificado') {
+            <header>SELECCIONAR CERTIFICADO <button type="button" (click)="cerrarDialogo()" aria-label="Cerrar"><app-icono nombre="cerrar" /></button></header>
+            <div class="esc-cuerpo">
+              <div class="esc-pestanas"><span class="activa">Certificados instalados</span></div>
+              <div class="esc-lista">
+                @if (cargandoCertificados()) {
+                  <p class="esc-nota">Leyendo certificados…</p>
+                } @else {
+                  @for (c of certificados(); track c.thumbprint) {
+                    <button type="button" class="esc-item" [class.elegido]="certificadoElegido()?.thumbprint === c.thumbprint"
+                      [disabled]="!c.aptoFirma" (click)="certificadoElegido.set(c)" (dblclick)="elegirCertificado(c)">
+                      <span class="esc-circulo chico"><app-icono nombre="certificado" /></span>
+                      <span class="esc-item-texto">
+                        <strong>{{ c.titular }}</strong>
+                        <small>{{ c.emisor }}</small>
+                        <span>Válido del {{ c.validoDesde | date: 'dd/MM/yyyy HH:mm' }} al {{ c.validoHasta | date: 'dd/MM/yyyy HH:mm' }}</span>
+                      </span>
+                    </button>
+                  } @empty {
+                    <p class="esc-nota">No hay certificados de firma. Conecte su token o DNIe y pulse «Actualizar».</p>
+                  }
+                }
+              </div>
+            </div>
+            <footer>
+              <button type="button" class="esc-texto" (click)="cargarCertificados()">Actualizar</button>
+              <span class="esc-espacio"></span>
+              <button type="button" class="esc-redondo" [disabled]="!certificadoElegido()" (click)="elegirCertificado(certificadoElegido())">
+                <span class="esc-circulo"><app-icono nombre="aceptar" /></span>Aceptar
+              </button>
+              <button type="button" class="esc-redondo" (click)="elegirCertificado(null)">
+                <span class="esc-circulo"><app-icono nombre="cancelar" /></span>Cancelar
+              </button>
+            </footer>
+          }
+
+          <!-- ---------------------------------------------- Verificar -->
+          @case ('verificar') {
+            <header>VERIFICAR FIRMAS <button type="button" (click)="cerrarDialogo()" aria-label="Cerrar"><app-icono nombre="cerrar" /></button></header>
+            @if (verificacion(); as v) {
+              <div class="esc-cuerpo">
+                <div class="esc-pestanas"><span class="activa">Firmas digitales en el documento</span></div>
+                <div class="esc-lista alta">
+                  @for (f of v.firmas; track f.nombreCampo) {
+                    <div class="esc-item fijo">
+                      <span class="esc-circulo chico"><app-icono nombre="certificado" /></span>
+                      <span class="esc-item-texto">
+                        <strong>{{ f.firmante }}</strong>
+                        @if (f.motivo) {<span>Razón: {{ f.motivo }}</span>}
+                        <span>Fecha: {{ f.fechaFirma ? (f.fechaFirma | date: 'dd/MM/yyyy HH:mm:ss ZZZZZ') : '—' }}</span>
+                        <span>{{ f.tieneSelloTiempo ? 'Con sello de tiempo' + (f.fechaSelloTiempo ? ' (' + (f.fechaSelloTiempo | date: 'dd/MM/yyyy HH:mm:ss') + ')' : '') : 'La hora procede del reloj del equipo firmante.' }}</span>
+                        <span>Algoritmo: {{ f.algoritmoHash }}with{{ f.algoritmoFirma }}</span>
+                        <span>Emisor: {{ f.emisor }}</span>
+                        @if (f.error) {<span class="esc-mal-texto">{{ f.error }}</span>}
+                      </span>
+                      <span class="esc-checks">
+                        <span>Integridad: <app-icono [nombre]="f.integridadValida ? 'estado' : 'cancelar'" [class.esc-ok]="f.integridadValida" [class.esc-mal]="!f.integridadValida" /></span>
+                        <span>Vigencia: <app-icono [nombre]="f.certificadoVigenteAlFirmar ? 'estado' : 'cancelar'" [class.esc-ok]="f.certificadoVigenteAlFirmar" [class.esc-mal]="!f.certificadoVigenteAlFirmar" /></span>
+                      </span>
+                    </div>
+                  } @empty {
+                    <p class="esc-nota">El documento no contiene firmas digitales.</p>
+                  }
+                </div>
+              </div>
+              <footer>
+                <div class="esc-resumen">
+                  <span>Total de número de firmas: {{ v.totalFirmas }}</span>
+                  @if (v.firmas[0]; as p) {<span>Total de revisiones del doc: {{ p.totalRevisiones }}</span>}
+                  <span [class.esc-ok-texto]="v.todasValidas" [class.esc-mal-texto]="!v.todasValidas">
+                    {{ v.totalFirmas === 0 ? 'Sin firmas.' : v.todasValidas ? 'La integridad del documento es correcta.' : 'Al menos una firma presenta observaciones.' }}
+                  </span>
+                </div>
+                <div class="esc-resultado">
+                  Resultado de verificación:
+                  <app-icono [nombre]="v.todasValidas ? 'estado' : 'alerta'" [class.esc-ok]="v.todasValidas" [class.esc-mal]="!v.todasValidas" />
+                </div>
+                <span class="esc-espacio"></span>
+                <button type="button" class="esc-redondo" (click)="imprimir()">
+                  <span class="esc-circulo"><app-icono nombre="imprimir" /></span>Imprimir
+                </button>
+                <button type="button" class="esc-redondo" (click)="cerrarDialogo()">
+                  <span class="esc-circulo"><app-icono nombre="cancelar" /></span>Salir
+                </button>
+              </footer>
+            }
+          }
+
+          <!-- ---------------------------------------------- Estado -->
+          @case ('estado') {
+            <header>ESTADO FIRMA DIGITAL <button type="button" (click)="cerrarDialogo()" aria-label="Cerrar"><app-icono nombre="cerrar" /></button></header>
+            <div class="esc-cuerpo">
+              <h2 class="esc-subtitulo">Verificación</h2>
+              <div class="esc-lista">
+                @for (c of comprobaciones(); track c.nombre) {
+                  <div class="esc-item fijo">
+                    <span class="esc-circulo chico"><app-icono [nombre]="c.icono" /></span>
+                    <span class="esc-item-texto"><strong>{{ c.nombre }}</strong><span>{{ c.detalle }}</span></span>
+                    <span class="esc-checks">
+                      Estado:
+                      @if (c.ok === null) {<span class="esc-giro chico"></span>}
+                      @else {<app-icono [nombre]="c.ok ? 'estado' : 'cancelar'" [class.esc-ok]="c.ok" [class.esc-mal]="!c.ok" />}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+            <footer class="centro"><button type="button" class="esc-texto marco" (click)="cerrarDialogo()">CERRAR</button></footer>
+          }
+
+          <!-- ---------------------------------------------- Acerca de -->
+          @case ('acerca') {
+            <div class="esc-acerca">
+              <img [src]="marca.url('logo-oscuro')" alt="Jean Piere Juarez Campos" />
+              <div class="esc-acerca-titulo">Firma Digital</div>
+              <div class="esc-acerca-version">Versión {{ version() || '—' }}</div>
+              <p>Firma PAdES de documentos PDF con el certificado de su token, DNIe o almacén de Windows.</p>
+              <button type="button" class="esc-texto marco claro" (click)="cerrarDialogo()">CERRAR</button>
+            </div>
+          }
+        }
+      </section>
+    </div>
+  }
+</div>

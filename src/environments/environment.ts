@@ -4,8 +4,10 @@
  */
 export const environment = {
   produccion: true,
+  escritorio: false,
   agenteUrl: 'http://127.0.0.1:9876',
   apiUrl: '/api',
   /** Instalador del agente publicado junto al front. */
   descargaAgente: '/descargas/AgenteFirmaSetup.exe',
+  sitioWeb: 'https://firma.juarezcampos.net',
 };
