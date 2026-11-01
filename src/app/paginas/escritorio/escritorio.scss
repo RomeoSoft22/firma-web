@@ -150,6 +150,16 @@ app-icono {
   padding: 6px 0;
   z-index: 10;
 
+  // Puente invisible sobre el hueco: el menú no se cierra al bajar el mouse desde el botón.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -8px;
+    height: 8px;
+  }
+
   button {
     display: flex;
     justify-content: space-between;

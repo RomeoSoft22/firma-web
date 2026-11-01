@@ -40,7 +40,7 @@ import { environment } from '../../environments/environment';
             </li>
             <li>
               Desactive el <strong>bloqueador de anuncios o escudos</strong> del navegador para este sitio: algunos bloquean
-              la conexión con el agente (127.0.0.1).
+              la conexión con el Agente de Firma de esta PC.
             </li>
           </ol>
           Luego pulse «Actualizar».

@@ -20,8 +20,9 @@
   <!-- ================================================================ Barra de herramientas -->
   <div class="esc-herramientas" (click)="$event.stopPropagation()">
     <div class="esc-grupo">
-      <div class="esc-desplegable">
-        <button type="button" class="esc-boton" [class.activo]="menu() === 'archivo'" (click)="alternar('archivo', $event)">
+      <!-- Al pasar el mouse se despliega el menú; el clic en el botón ejecuta su opción principal. -->
+      <div class="esc-desplegable" (mouseenter)="abrirMenu('archivo')" (mouseleave)="cerrarMenus()">
+        <button type="button" class="esc-boton" [class.activo]="menu() === 'archivo'" (click)="abrir()" title="Abrir PDF">
           <span class="esc-circulo"><app-icono nombre="archivo" /></span><span>Archivo</span>
         </button>
         @if (menu() === 'archivo') {
@@ -37,20 +38,23 @@
         }
       </div>
 
-      <div class="esc-desplegable">
-        <button type="button" class="esc-boton" [class.activo]="menu() === 'firmar'" (click)="alternar('firmar', $event)">
+      <div class="esc-desplegable" (mouseenter)="abrirMenu('firmar')" (mouseleave)="cerrarMenus()">
+        <button type="button" class="esc-boton" [class.activo]="menu() === 'firmar'" (click)="firmar('titular')" title="Firma titular">
           <span class="esc-circulo"><app-icono nombre="firmar" /></span><span>Firmar</span>
         </button>
         @if (menu() === 'firmar') {
           <div class="esc-menu">
             <button type="button" (click)="firmar('titular')">Firma titular</button>
             <button type="button" (click)="firmarAvanzada('titular')">Firma avanzada</button>
+            @for (m of firmasPorMotivo(); track m.motivo) {
+              <button type="button" (click)="firmar('motivo', m.motivo)">{{ m.etiqueta }}</button>
+            }
           </div>
         }
       </div>
 
-      <div class="esc-desplegable">
-        <button type="button" class="esc-boton" [class.activo]="menu() === 'vb'" (click)="alternar('vb', $event)">
+      <div class="esc-desplegable" (mouseenter)="abrirMenu('vb')" (mouseleave)="cerrarMenus()">
+        <button type="button" class="esc-boton" [class.activo]="menu() === 'vb'" (click)="firmar('vb')" title="V° B° firma">
           <span class="esc-circulo"><app-icono nombre="vb" /></span><span>V° B°</span>
         </button>
         @if (menu() === 'vb') {
@@ -126,8 +130,9 @@
 
   <!-- ================================================================ Diálogos -->
   @if (dialogo(); as d) {
-    <div class="esc-fondo" (click)="cerrarDialogo()">
-      <section class="esc-dialogo" [class.ancho]="d === 'verificar'" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <!-- Ventanas modales: solo se cierran con sus botones (o Esc), no al hacer clic fuera. -->
+    <div class="esc-fondo">
+      <section class="esc-dialogo" [class.ancho]="d === 'verificar'" role="dialog" aria-modal="true">
         @switch (d) {
           <!-- ---------------------------------------------- Certificado -->
           @case ('certificado') {

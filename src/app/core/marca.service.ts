@@ -1,7 +1,22 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ConfigService } from './config.service';
+import { EstadoService } from './estado.service';
+
+export type PreferenciaTema = 'sistema' | 'claro' | 'oscuro';
+
+const CLAVE_TEMA = 'firma.tema';
+const esPreferencia = (v: unknown): v is PreferenciaTema => v === 'sistema' || v === 'claro' || v === 'oscuro';
+
+function leerPreferencia(): PreferenciaTema {
+  try {
+    const v = localStorage.getItem(CLAVE_TEMA);
+    return esPreferencia(v) ? v : 'sistema';
+  } catch {
+    return 'sistema';
+  }
+}
 
 /** Variantes del logo: "claro" se usa sobre fondos claros (logo oscuro) y "oscuro" sobre fondos oscuros (logo blanco). */
 export type VarianteMarca = 'simbolo-claro' | 'simbolo-oscuro' | 'logo-claro' | 'logo-oscuro';
@@ -20,10 +35,14 @@ interface MarcaServidor {
 export class MarcaService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
+  private readonly estado = inject(EstadoService);
   private readonly consulta = matchMedia('(prefers-color-scheme: dark)');
+  private readonly sistemaOscuro = signal(this.consulta.matches);
 
-  /** true cuando el sistema está en tema oscuro. */
-  readonly temaOscuro = signal(this.consulta.matches);
+  /** Tema elegido en Configuración (parámetro «tema»); se recuerda en el equipo para aplicarlo al abrir. */
+  readonly preferencia = signal<PreferenciaTema>(leerPreferencia());
+  /** true cuando se muestra el tema oscuro (elegido o porque Windows / el navegador lo usa). */
+  readonly temaOscuro = computed(() => this.preferencia() === 'oscuro' || (this.preferencia() === 'sistema' && this.sistemaOscuro()));
   private readonly servidor = signal<MarcaServidor | null>(null);
 
   /** Símbolo adecuado para el fondo de la página según el tema. */
@@ -32,7 +51,16 @@ export class MarcaService {
   readonly logoTema = computed(() => this.url(this.temaOscuro() ? 'logo-oscuro' : 'logo-claro'));
 
   constructor() {
-    this.consulta.addEventListener('change', (e) => this.temaOscuro.set(e.matches));
+    this.consulta.addEventListener('change', (e) => this.sistemaOscuro.set(e.matches));
+    // El tema guardado en el servidor manda (es el mismo en la web y en la aplicación de escritorio).
+    effect(() => {
+      const tema = this.estado.parametros()['tema'];
+      if (esPreferencia(tema)) untracked(() => this.preferencia.set(tema));
+    });
+    effect(() => {
+      document.documentElement.dataset['theme'] = this.temaOscuro() ? 'dark' : 'light';
+      try { localStorage.setItem(CLAVE_TEMA, this.preferencia()); } catch { /* sin almacenamiento */ }
+    });
   }
 
   /** URL de una variante (personalizada en el servidor o la incluida por defecto). */

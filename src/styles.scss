@@ -21,9 +21,8 @@
   color-scheme: light;
 }
 
-// Tema oscuro automático (según Windows / el navegador).
-@media (prefers-color-scheme: dark) {
-  :root {
+// Tema oscuro: elegido en Configuración (data-theme en <html>) o automático según Windows / el navegador.
+@mixin tema-oscuro {
     --primario: #3396ff;
     --primario-oscuro: #037fff;
     --primario-suave: #10243d;
@@ -42,8 +41,11 @@
     --aviso-fondo: #33290f;
     --sombra: rgba(0, 0, 0, 0.35);
     color-scheme: dark;
-  }
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { @include tema-oscuro; }
+}
+:root[data-theme='dark'] { @include tema-oscuro; }
 * { box-sizing: border-box; }
 
 body {

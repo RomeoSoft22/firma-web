@@ -81,6 +81,18 @@ export class EscritorioService {
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
+  /**
+   * Abre la configuración del sistema (ingreso con identidad.juarezcampos.net) en una ventana propia
+   * de la aplicación; se resuelve cuando el usuario la cierra. En el navegador abre una pestaña nueva.
+   */
+  async configurar(url: string): Promise<void> {
+    if (this.puente) {
+      await this.llamar('configurar', { url });
+      return;
+    }
+    window.open(url, '_blank');
+  }
+
   mostrarEnCarpeta(ruta: string): void {
     if (this.puente) this.llamar('mostrarEnCarpeta', { ruta }).catch(() => undefined);
   }

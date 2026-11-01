@@ -5,7 +5,7 @@ import { ApiService } from '../core/api.service';
 import { mensajeError } from '../core/archivos';
 import { ConfigService } from '../core/config.service';
 import { EstadoService } from '../core/estado.service';
-import { MarcaService, VarianteMarca } from '../core/marca.service';
+import { MarcaService, PreferenciaTema, VarianteMarca } from '../core/marca.service';
 import { EstadoAgente, Motivo, Parametros } from '../core/modelos';
 
 @Component({
@@ -75,6 +75,18 @@ import { EstadoAgente, Motivo, Parametros } from '../core/modelos';
         <label class="check"><input type="checkbox" [ngModel]="p['incluir_revocacion'] === '1'" (ngModelChange)="p['incluir_revocacion'] = $event ? '1' : '0'" /> Incluir OCSP/CRL por defecto</label>
         <button class="btn btn-primario" [disabled]="!estado.apiOk()" (click)="guardarParametros()">Guardar parámetros</button>
       </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Tema</h2>
+      <label class="campo">
+        <span>Tema de la web y de la aplicación de escritorio</span>
+        <select [ngModel]="marca.preferencia()" (ngModelChange)="cambiarTema($event)">
+          <option value="sistema">Automático (según Windows / el navegador)</option>
+          <option value="claro">Claro (diurno)</option>
+          <option value="oscuro">Oscuro</option>
+        </select>
+      </label>
     </div>
 
     <div class="tarjeta">
@@ -221,6 +233,19 @@ export class ConfiguracionPagina implements OnInit {
       this.avisar('Logo actualizado.');
     } catch (e) {
       this.avisar(mensajeError(e), true);
+    }
+  }
+
+  /** Se aplica al instante y se guarda como parámetro «tema» (común a la web y al escritorio). */
+  async cambiarTema(tema: PreferenciaTema): Promise<void> {
+    this.marca.preferencia.set(tema);
+    this.p['tema'] = tema;
+    try {
+      await this.api.guardarParametros({ tema });
+      await this.estado.cargarCatalogos();
+      this.avisar('Tema guardado.');
+    } catch (e) {
+      this.avisar(`El tema se aplicó en este equipo, pero no se guardó: ${mensajeError(e)}`, true);
     }
   }
 

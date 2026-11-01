@@ -18,7 +18,8 @@ interface DocumentoAbierto {
   bytes: Uint8Array;
 }
 
-type TipoFirma = 'titular' | 'vb';
+/** titular = motivo por defecto; vb = motivo de visto bueno; motivo = otro motivo activo (por encargo, etc.). */
+type TipoFirma = 'titular' | 'vb' | 'motivo';
 type Menu = 'archivo' | 'firmar' | 'vb' | null;
 type Dialogo = 'certificado' | 'verificar' | 'estado' | 'acerca' | null;
 
@@ -59,6 +60,7 @@ export class EscritorioPagina implements OnInit, OnDestroy {
   // Firma
   protected readonly colocacion = signal<{ ancho: number; alto: number } | null>(null);
   private tipoEnCurso: TipoFirma = 'titular';
+  private motivoEnCurso = '';
   private posicionElegida: Colocacion | null = null;
   protected readonly certificados = signal<Certificado[]>([]);
   protected readonly certificadoElegido = signal<Certificado | null>(null);
@@ -73,6 +75,19 @@ export class EscritorioPagina implements OnInit, OnDestroy {
   protected readonly todoBien = computed(() => this.estado.agenteOk() === true && this.estado.apiOk() === true);
   protected readonly version = computed(() => this.estado.infoAgente()?.version ?? '');
   protected readonly enColocacion = computed(() => !!this.colocacion());
+
+  /**
+   * Opciones extra del menú Firmar: cada motivo activo que no sea el del titular ni el del V° B°
+   * (p. ej. «Por encargo» → «Firma por encargo»). Se activan o desactivan en Configuración → Motivos.
+   */
+  protected readonly firmasPorMotivo = computed(() => {
+    const titular = this.motivoDe('titular');
+    const vb = this.motivoDe('vb');
+    return this.estado
+      .motivos()
+      .filter((m) => m.activo && m.descripcion !== titular && m.descripcion !== vb)
+      .map((m) => ({ motivo: m.descripcion, etiqueta: 'Firma ' + m.descripcion.charAt(0).toLowerCase() + m.descripcion.slice(1) }));
+  });
 
   private reloj?: ReturnType<typeof setInterval>;
   private temporizadorAviso?: ReturnType<typeof setTimeout>;
@@ -90,9 +105,9 @@ export class EscritorioPagina implements OnInit, OnDestroy {
 
   // ------------------------------------------------------------------ Menús
 
-  protected alternar(menu: Menu, evento: Event): void {
-    evento.stopPropagation();
-    this.menu.update((m) => (m === menu ? null : menu));
+  /** Los menús se despliegan al pasar el mouse (no durante una firma ni con una ventana abierta). */
+  protected abrirMenu(menu: Menu): void {
+    if (!this.ocupado() && !this.dialogo() && !this.colocacion()) this.menu.set(menu);
   }
 
   @HostListener('document:click')
@@ -188,28 +203,35 @@ export class EscritorioPagina implements OnInit, OnDestroy {
     return vb?.descripcion ?? porDefecto;
   }
 
-  /** Firma con posición automática (titular: arriba a la derecha; V° B°: abajo a la izquierda). */
-  protected async firmar(tipo: TipoFirma): Promise<void> {
+  /**
+   * Firma con posición automática: titular arriba a la derecha, V° B° abajo a la izquierda y los
+   * demás motivos (por encargo, conformidad…) abajo a la derecha para no tapar la del titular.
+   */
+  protected async firmar(tipo: TipoFirma, motivo = this.motivoDe(tipo)): Promise<void> {
     this.menu.set(null);
-    if (!this.exigirDocumento()) return;
-    const posicion: PosicionFirma = tipo === 'titular' ? 'superior-derecha' : 'inferior-izquierda';
+    if (this.ocupado() || !this.exigirDocumento()) return;
+    const posicion: PosicionFirma =
+      tipo === 'titular' ? 'superior-derecha' : tipo === 'vb' ? 'inferior-izquierda' : 'inferior-derecha';
     const cert = await this.pedirCertificado();
-    if (cert) await this.ejecutarFirma(tipo, cert, { posicion, pagina: 1, x: 0, y: 0 });
+    if (cert) await this.ejecutarFirma(tipo, motivo, cert, { posicion, pagina: 1, x: 0, y: 0 });
   }
 
   /** Firma avanzada: el rectángulo rojo sigue al mouse; con un clic se elige dónde va el sello. */
-  protected firmarAvanzada(tipo: TipoFirma): void {
+  protected firmarAvanzada(tipo: TipoFirma, motivo = this.motivoDe(tipo)): void {
     this.menu.set(null);
-    if (!this.exigirDocumento()) return;
+    if (this.ocupado() || !this.exigirDocumento()) return;
     this.tipoEnCurso = tipo;
-    this.colocacion.set(this.estado.tamanoDeMotivo(this.motivoDe(tipo)));
+    this.motivoEnCurso = motivo;
+    this.colocacion.set(this.estado.tamanoDeMotivo(motivo));
   }
 
   protected async alColocar(c: Colocacion): Promise<void> {
     this.posicionElegida = c;
     this.colocacion.set(null);
     const cert = await this.pedirCertificado();
-    if (cert) await this.ejecutarFirma(this.tipoEnCurso, cert, { posicion: 'manual', pagina: c.pagina, x: c.x, y: c.y });
+    if (cert) {
+      await this.ejecutarFirma(this.tipoEnCurso, this.motivoEnCurso, cert, { posicion: 'manual', pagina: c.pagina, x: c.x, y: c.y });
+    }
   }
 
   protected cancelarColocacion(): void {
@@ -225,12 +247,12 @@ export class EscritorioPagina implements OnInit, OnDestroy {
 
   private async ejecutarFirma(
     tipo: TipoFirma,
+    motivo: string,
     cert: Certificado,
     lugar: { posicion: PosicionFirma; pagina: number; x: number; y: number },
   ): Promise<void> {
     const doc = this.documento();
     if (!doc) return;
-    const motivo = this.motivoDe(tipo);
     this.ocupado.set('Firmando… ingrese el PIN de su token si se solicita');
     let registro: DocumentoSubido | null = null;
     try {
@@ -240,6 +262,8 @@ export class EscritorioPagina implements OnInit, OnDestroy {
         visible: true,
         ...lugar,
       });
+      // El V° B° siempre lleva el logo arriba y la descripción abajo.
+      if (tipo === 'vb') op.disposicion = 'vertical';
 
       if (this.estado.apiOk()) {
         const archivo = new File([base64ABlob(doc.base64)], doc.nombre, { type: 'application/pdf' });
@@ -354,9 +378,21 @@ export class EscritorioPagina implements OnInit, OnDestroy {
     ]);
   }
 
-  /** La configuración (motivos, imágenes, parámetros, logo) se administra en la web con su cuenta. */
-  protected configurar(): void {
-    window.open(`${environment.sitioWeb}/configuracion`, '_blank');
+  /**
+   * Configuración del sistema (motivos, imágenes, parámetros, logo) en una ventana propia que ingresa
+   * con identidad.juarezcampos.net; al cerrarla se recargan motivos y parámetros.
+   */
+  protected async configurar(): Promise<void> {
+    this.menu.set(null);
+    try {
+      await this.puente.configurar(`${environment.sitioWeb}/configuracion`);
+      if (this.puente.disponible) {
+        await this.estado.cargarCatalogos();
+        await this.marca.cargar();
+      }
+    } catch (e) {
+      this.avisar(mensajeError(e), true);
+    }
   }
 
   protected acercaDe(): void {
