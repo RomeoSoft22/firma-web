@@ -3,6 +3,8 @@ import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal, v
 import { environment } from '../../../environments/environment';
 import { Icono, NombreIcono } from '../../compartido/icono';
 import { Colocacion, VisorDocumento } from '../../compartido/visor-documento';
+import { Router } from '@angular/router';
+import { AccesoService } from '../../core/acceso.service';
 import { AgenteService } from '../../core/agente.service';
 import { ApiService } from '../../core/api.service';
 import { base64ABlob, mensajeError } from '../../core/archivos';
@@ -21,7 +23,7 @@ interface DocumentoAbierto {
 /** titular = motivo por defecto; vb = motivo de visto bueno; motivo = otro motivo activo (por encargo, etc.). */
 type TipoFirma = 'titular' | 'vb' | 'motivo';
 type Menu = 'archivo' | 'firmar' | 'vb' | null;
-type Dialogo = 'certificado' | 'verificar' | 'estado' | 'acerca' | null;
+type Dialogo = 'certificado' | 'verificar' | 'estado' | 'acerca' | 'clave' | null;
 
 interface Comprobacion {
   nombre: string;
@@ -47,6 +49,8 @@ export class EscritorioPagina implements OnInit, OnDestroy {
   protected readonly estado = inject(EstadoService);
   protected readonly marca = inject(MarcaService);
   protected readonly puente = inject(EscritorioService);
+  private readonly acceso = inject(AccesoService);
+  private readonly router = inject(Router);
 
   private readonly visor = viewChild(VisorDocumento);
 
@@ -66,6 +70,11 @@ export class EscritorioPagina implements OnInit, OnDestroy {
   protected readonly certificadoElegido = signal<Certificado | null>(null);
   protected readonly cargandoCertificados = signal(false);
   private resolverCertificado: ((c: Certificado | null) => void) | null = null;
+
+  // Opciones de administración (contraseña del administrador)
+  protected readonly clave = signal('');
+  protected readonly errorClave = signal<string | null>(null);
+  protected readonly ingresando = signal(false);
 
   // Verificación / estado
   protected readonly verificacion = signal<VerificacionResultado | null>(null);
@@ -379,19 +388,34 @@ export class EscritorioPagina implements OnInit, OnDestroy {
   }
 
   /**
-   * Configuración del sistema (motivos, imágenes, parámetros, logo) en una ventana propia que ingresa
-   * con identidad.juarezcampos.net; al cerrarla se recargan motivos y parámetros.
+   * «Opciones de administración»: pide solo la contraseña del administrador y abre la configuración del
+   * sistema en esta misma ventana. Mientras la sesión siga vigente no la vuelve a pedir.
    */
-  protected async configurar(): Promise<void> {
+  protected configurar(): void {
     this.menu.set(null);
+    if (this.acceso.autenticado()) {
+      this.router.navigateByUrl('/configuracion');
+      return;
+    }
+    this.clave.set('');
+    this.errorClave.set(null);
+    this.dialogo.set('clave');
+  }
+
+  protected async ingresarConClave(): Promise<void> {
+    const clave = this.clave();
+    if (!clave || this.ingresando()) return;
+    this.ingresando.set(true);
+    this.errorClave.set(null);
     try {
-      await this.puente.configurar(`${environment.sitioWeb}/configuracion`);
-      if (this.puente.disponible) {
-        await this.estado.cargarCatalogos();
-        await this.marca.cargar();
-      }
+      await this.acceso.ingresarConClave(clave);
+      this.dialogo.set(null);
+      this.clave.set('');
+      await this.router.navigateByUrl('/configuracion');
     } catch (e) {
-      this.avisar(mensajeError(e), true);
+      this.errorClave.set(mensajeError(e));
+    } finally {
+      this.ingresando.set(false);
     }
   }
 

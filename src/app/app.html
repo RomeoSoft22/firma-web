@@ -1,5 +1,23 @@
 @if (enEscritorio()) {
   <router-outlet />
+} @else if (esEscritorio) {
+  <!-- Aplicación de escritorio: Configuración / Historial dentro de la misma ventana. -->
+  <div class="esc-admin">
+    <header class="esc-admin-barra">
+      <img class="logo" [src]="marca.url('simbolo-oscuro')" alt="" />
+      <strong>FIRMA DIGITAL</strong>
+      <nav>
+        <a routerLink="/configuracion" routerLinkActive="activo">Configuración</a>
+        <a routerLink="/historial" routerLinkActive="activo">Historial</a>
+      </nav>
+      <span class="espacio"></span>
+      <button type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+      <button type="button" class="volver" (click)="volverAFirmar()">← Volver a firmar</button>
+    </header>
+    <main class="contenido">
+      <router-outlet />
+    </main>
+  </div>
 } @else {
 <div class="marco">
   <aside class="lateral">

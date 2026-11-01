@@ -146,4 +146,16 @@ export class ApiService {
   guardarParametros(p: Parametros): Promise<Parametros> {
     return firstValueFrom(this.http.put<Parametros>(this.url('parametros'), p));
   }
+
+  // ---- Clave de administración de la aplicación de escritorio ----
+
+  claveEscritorio(): Promise<{ definida: boolean }> {
+    return firstValueFrom(this.http.get<{ definida: boolean }>(this.url('acceso/clave-escritorio')));
+  }
+
+  definirClaveEscritorio(clave: string, confirmacion: string): Promise<{ definida: boolean }> {
+    return firstValueFrom(
+      this.http.put<{ definida: boolean }>(this.url('acceso/clave-escritorio'), { clave, clave_confirmation: confirmacion }),
+    );
+  }
 }

@@ -16,6 +16,8 @@ export interface UsuarioIdentidad {
 }
 
 const CLAVE_LOGIN = 'firma-digital.login';
+/** Los tokens de la clave de administración de escritorio empiezan así (los JWT de identidad, no). */
+const PREFIJO_ESCRITORIO = 'fdc_';
 
 /**
  * Sesión de administración (Historial y Configuración) con identidad.juarezcampos.net:
@@ -93,8 +95,28 @@ export class AccesoService {
     return this.token() ? Promise.resolve(true) : this.renovar();
   }
 
+  /**
+   * Aplicación de escritorio: «Opciones de administración» con la contraseña del administrador.
+   * La sesión dura lo que indique la API (60 min) y no se renueva: al vencer se vuelve a pedir la clave.
+   */
+  async ingresarConClave(clave: string): Promise<void> {
+    this.empezar(await firstValueFrom(this.http.post<Sesion>(this.url('acceso/clave'), { clave })));
+  }
+
+  /** true si la sesión es la de la clave de escritorio (no la de identidad). */
+  private esDeEscritorio(): boolean {
+    return this.token()?.startsWith(PREFIJO_ESCRITORIO) ?? false;
+  }
+
   /** Cierra la sesión aquí y en identidad (y con ello en todos los sistemas). */
   async salir(): Promise<void> {
+    if (this.esDeEscritorio()) {
+      // Solo se revoca el token de la clave de escritorio; no hay sesión de identidad que cerrar.
+      const token = this.token()!;
+      this.limpiar();
+      await firstValueFrom(this.http.post(this.url('acceso/salir'), {}, { headers: { Authorization: `Bearer ${token}` } })).catch(() => undefined);
+      return;
+    }
     try {
       const r = await firstValueFrom(this.http.post<{ logout_url: string }>(this.url('acceso/salir'), {}));
       this.limpiar();
@@ -114,6 +136,11 @@ export class AccesoService {
     this.token.set(sesion.access_token);
     this.usuario.set(sesion.usuario);
     clearTimeout(this.renovacion);
+    if (this.esDeEscritorio()) {
+      // La clave de escritorio no se renueva: al vencer se cierra la sesión.
+      this.renovacion = setTimeout(() => this.limpiar(), sesion.expires_in * 1000);
+      return;
+    }
     // Renueva un minuto antes de que venza el JWT (15 minutos por defecto).
     this.renovacion = setTimeout(() => this.renovar(), Math.max(30, sesion.expires_in - 60) * 1000);
   }

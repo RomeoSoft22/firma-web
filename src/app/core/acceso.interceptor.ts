@@ -2,11 +2,12 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/comm
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, from, switchMap, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { AccesoService } from './acceso.service';
 import { ConfigService } from './config.service';
 
 /** Rutas del propio flujo de ingreso: no llevan token ni se reintentan. */
-const RUTAS_ACCESO = ['/acceso/config', '/acceso/canjear', '/acceso/renovar', '/acceso/salir'];
+const RUTAS_ACCESO = ['/acceso/config', '/acceso/canjear', '/acceso/renovar', '/acceso/salir', '/acceso/clave'];
 
 /**
  * Añade el JWT de identidad solo a las llamadas a la API propia (nunca al agente local).
@@ -28,6 +29,12 @@ export const accesoInterceptor: HttpInterceptorFn = (req, next) => {
   return next(conToken(req)).pipe(
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse) || error.status !== 401) return throwError(() => error);
+      if (environment.escritorio) {
+        // Escritorio: no hay renovación; se vuelve a la ventana principal, donde «Configurar» pide la clave.
+        acceso.limpiar();
+        router.navigateByUrl('/escritorio');
+        return throwError(() => error);
+      }
       return from(acceso.renovar()).pipe(
         switchMap(ok => {
           if (ok) return next(conToken(req));

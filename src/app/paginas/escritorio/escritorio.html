@@ -132,7 +132,7 @@
   @if (dialogo(); as d) {
     <!-- Ventanas modales: solo se cierran con sus botones (o Esc), no al hacer clic fuera. -->
     <div class="esc-fondo">
-      <section class="esc-dialogo" [class.ancho]="d === 'verificar'" role="dialog" aria-modal="true">
+      <section class="esc-dialogo" [class.ancho]="d === 'verificar'" [class.chico]="d === 'clave'" role="dialog" aria-modal="true">
         @switch (d) {
           <!-- ---------------------------------------------- Certificado -->
           @case ('certificado') {
@@ -243,6 +243,20 @@
               </div>
             </div>
             <footer class="centro"><button type="button" class="esc-texto marco" (click)="cerrarDialogo()">CERRAR</button></footer>
+          }
+
+          <!-- ---------------------------------------------- Opciones de administración -->
+          @case ('clave') {
+            <header>OPCIONES DE ADMINISTRACIÓN <button type="button" (click)="cerrarDialogo()" aria-label="Cerrar"><app-icono nombre="cerrar" /></button></header>
+            <form class="esc-cuerpo esc-clave" (submit)="$event.preventDefault(); ingresarConClave()">
+              <label for="esc-clave">Ingrese la contraseña del administrador</label>
+              <input id="esc-clave" type="password" autocomplete="current-password" autofocus
+                [value]="clave()" (input)="clave.set($any($event.target).value)" [disabled]="ingresando()" />
+              @if (errorClave(); as err) {<p class="esc-mal-texto">{{ err }}</p>}
+              <button type="submit" class="esc-texto marco" [disabled]="!clave() || ingresando()">
+                {{ ingresando() ? 'VERIFICANDO…' : 'ACEPTAR' }}
+              </button>
+            </form>
           }
 
           <!-- ---------------------------------------------- Acerca de -->

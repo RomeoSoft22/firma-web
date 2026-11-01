@@ -343,6 +343,7 @@ app-icono {
   user-select: text;
 
   &.ancho { width: min(1180px, 96vw); height: 88vh; }
+  &.chico { width: min(420px, 94vw); }
 
   > header {
     display: flex;
@@ -450,6 +451,30 @@ app-icono {
 }
 
 // ------------------------------------------------------------ Acerca de
+// «Opciones de administración»: solo la contraseña.
+.esc-clave {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 36px 32px 32px;
+  text-align: center;
+
+  input {
+    width: 100%;
+    max-width: 280px;
+    padding: 9px 10px;
+    font: inherit;
+    border: 1px solid var(--esc-texto, #090a0c);
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+
+    &:focus { outline: 2px solid #037fff; outline-offset: 1px; }
+  }
+
+  p { margin: 0; }
+}
+
 .esc-acerca {
   display: grid;
   justify-items: center;

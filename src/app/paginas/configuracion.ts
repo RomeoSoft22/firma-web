@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../environments/environment';
 import { AgenteService } from '../core/agente.service';
 import { ApiService } from '../core/api.service';
 import { mensajeError } from '../core/archivos';
@@ -18,6 +19,8 @@ import { EstadoAgente, Motivo, Parametros } from '../core/modelos';
     </header>
 
     <div class="rejilla-2">
+      <!-- En la aplicación de escritorio las conexiones las resuelve el agente. -->
+      @if (!escritorio) {
       <div class="tarjeta">
         <h2>Conexiones</h2>
         <label class="campo"><span>URL del agente local</span><input [(ngModel)]="agenteUrl" /></label>
@@ -46,6 +49,7 @@ import { EstadoAgente, Motivo, Parametros } from '../core/modelos';
           </ul>
         }
       </div>
+      }
 
       <div class="tarjeta">
         <h2>Parámetros de firma</h2>
@@ -88,6 +92,24 @@ import { EstadoAgente, Motivo, Parametros } from '../core/modelos';
         </select>
       </label>
     </div>
+
+    @if (!escritorio) {
+      <div class="tarjeta">
+        <h2>Clave de administración (aplicación de escritorio)</h2>
+        <p class="ayuda">
+          En la aplicación de escritorio Firma Digital, «Configurar» pide solo esta contraseña (sin la cuenta de identidad).
+          Estado: <strong>{{ claveDefinida() === null ? '…' : claveDefinida() ? 'definida' : 'sin definir' }}</strong>.
+          Mínimo 8 caracteres; compártala solo con quienes administran el sistema.
+        </p>
+        <div class="fila-2">
+          <label class="campo"><span>Nueva contraseña</span><input type="password" autocomplete="new-password" [(ngModel)]="claveNueva" /></label>
+          <label class="campo"><span>Repita la contraseña</span><input type="password" autocomplete="new-password" [(ngModel)]="claveRepetida" /></label>
+        </div>
+        <button class="btn btn-primario" [disabled]="claveNueva.length < 8 || claveNueva !== claveRepetida" (click)="guardarClaveEscritorio()">
+          {{ claveDefinida() ? 'Cambiar contraseña' : 'Definir contraseña' }}
+        </button>
+      </div>
+    }
 
     <div class="tarjeta">
       <h2>Logo de la marca</h2>
@@ -204,6 +226,11 @@ export class ConfiguracionPagina implements OnInit {
   protected readonly mensaje = signal<string | null>(null);
   protected readonly mensajeError = signal(false);
 
+  protected readonly escritorio = environment.escritorio;
+  protected readonly claveDefinida = signal<boolean | null>(null);
+  protected claveNueva = '';
+  protected claveRepetida = '';
+
   protected readonly marca = inject(MarcaService);
   protected readonly variantesMarca: { clave: VarianteMarca; titulo: string; fondoOscuro: boolean }[] = [
     { clave: 'simbolo-claro', titulo: 'Símbolo · fondo claro', fondoOscuro: false },
@@ -217,6 +244,18 @@ export class ConfiguracionPagina implements OnInit {
     this.p = { ...this.estado.parametros() };
     await this.cargarMotivos();
     await this.marca.cargar();
+    if (!this.escritorio) this.api.claveEscritorio().then((r) => this.claveDefinida.set(r.definida), () => undefined);
+  }
+
+  async guardarClaveEscritorio(): Promise<void> {
+    try {
+      await this.api.definirClaveEscritorio(this.claveNueva, this.claveRepetida);
+      this.claveDefinida.set(true);
+      this.claveNueva = this.claveRepetida = '';
+      this.avisar('Contraseña de administración guardada.');
+    } catch (e) {
+      this.avisar(mensajeError(e), true);
+    }
   }
 
   async subirMarca(variante: VarianteMarca, evento: Event): Promise<void> {

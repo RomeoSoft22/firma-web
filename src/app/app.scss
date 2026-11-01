@@ -113,6 +113,48 @@ nav {
   box-sizing: border-box;
 }
 
+// ---------------------------------------------------------------- Aplicación de escritorio (Configuración / Historial)
+.esc-admin {
+  min-height: 100vh;
+  background: var(--fondo);
+
+  .contenido { margin: 0 auto; }
+}
+
+.esc-admin-barra {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 54px;
+  padding: 0 16px;
+  background: var(--primario);
+  color: #fff;
+
+  .logo { width: 32px; height: 32px; object-fit: contain; }
+  strong { letter-spacing: 0.06em; margin-right: 12px; }
+
+  nav { display: flex; gap: 4px; }
+
+  a, button {
+    color: #fff;
+    background: none;
+    border: 0;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover, &.activo { background: rgba(255, 255, 255, 0.18); }
+  }
+
+  .espacio { flex: 1; }
+  .volver { background: rgba(9, 10, 12, 0.35); font-weight: 600; }
+}
+
 @media (max-width: 860px) {
   .marco { grid-template-columns: 1fr; }
   .lateral { position: static; height: auto; }
